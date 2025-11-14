@@ -1,0 +1,113 @@
+.patient-report-view {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.btn-back {
+  padding: 10px 20px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.view-toggle button {
+  padding: 10px 20px;
+  border: 2px solid #667eea;
+  background: white;
+  color: #667eea;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.view-toggle button.active {
+  background: #667eea;
+  color: white;
+}
+
+.simplified-view {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.risk-score-display {
+  text-align: center;
+  padding: 30px;
+  border: 3px solid;
+  border-radius: 10px;
+  margin-bottom: 30px;
+}
+
+.score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: bold;
+  color: white;
+  margin: 20px auto;
+}
+
+.summary-section,
+.next-steps-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 5px;
+}
+
+.summary-section h3,
+.next-steps-section h3 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.report-metadata {
+  padding: 20px;
+  background: #e9ecef;
+  border-radius: 5px;
+}
+
+.full-view {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.report-image {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.report-image img {
+  max-width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.technical-details {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 5px;
+}
+
+.technical-details p {
+  margin: 10px 0;
+}
