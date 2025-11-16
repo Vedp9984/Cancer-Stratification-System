@@ -3,18 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { reportAPI } from '../services/api';
 import './RadiologistArchived.css';
 
-function RadiologistArchived() {
+function RadiologistArchived({ user }) {
   const [reports, setReports] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchArchivedReports();
-  }, []);
+  }, [user]);
 
   const fetchArchivedReports = async () => {
     try {
-      const response = await reportAPI.getAllReports();
+      // Fetch reports created by this radiologist
+      const response = await reportAPI.getAllReports(user._id, user.role);
       // Filter analyzed/reviewed reports
       const archived = response.data.filter(r => r.status !== 'pending');
       setReports(archived);

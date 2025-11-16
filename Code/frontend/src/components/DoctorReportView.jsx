@@ -7,8 +7,9 @@ function DoctorReportView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
-  const [notes, setNotes] = useState('');
+  const [review, setReview] = useState('');
   const [showFullReport, setShowFullReport] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     fetchReport();
@@ -18,21 +19,28 @@ function DoctorReportView() {
     try {
       const response = await reportAPI.getReportById(id);
       setReport(response.data);
+      // Load existing review if present
+      if (response.data.doctorReview) {
+        setReview(response.data.doctorReview);
+      }
     } catch (error) {
       console.error('Error fetching report:', error);
     }
   };
 
-  const handleSaveNotes = async () => {
+  const handleSaveReview = async () => {
     try {
       await reportAPI.updateReport(id, { 
         status: 'reviewed',
-        doctorNotes: notes 
+        doctorReview: review,
+        reviewedAt: new Date().toISOString()
       });
-      alert('Notes saved successfully!');
-      navigate(-1);
+      alert('Review saved successfully!');
+      setIsEditing(false);
+      fetchReport(); // Refresh to show updated data
     } catch (error) {
-      console.error('Error saving notes:', error);
+      console.error('Error saving review:', error);
+      alert('Failed to save review');
     }
   };
 
@@ -108,31 +116,74 @@ function DoctorReportView() {
               <div className="technical-details">
                 <h3>Technical Details</h3>
                 <p><strong>Report ID:</strong> {report._id}</p>
-                <p><strong>Radiologist ID:</strong> {report.radiologistId}</p>
-                <p><strong>Doctor ID:</strong> {report.doctorId}</p>
+                <p><strong>Radiologist:</strong> {report.radiologistId?.email || 'N/A'}</p>
+                <p><strong>Doctor:</strong> {report.doctorId?.email || 'N/A'}</p>
                 <p><strong>Created:</strong> {new Date(report.createdAt).toLocaleString()}</p>
                 <p><strong>Updated:</strong> {new Date(report.updatedAt).toLocaleString()}</p>
               </div>
             </div>
           )}
 
-          {/* Doctor's Notes Section */}
+          {/* Doctor's Review Section */}
           <div className="doctor-notes">
-            <h3>Doctor's Notes</h3>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add your clinical notes, treatment plan, or follow-up instructions..."
-              rows="8"
-            />
-            <div className="notes-actions">
-              <button className="btn-secondary" onClick={() => navigate(-1)}>
-                Cancel
-              </button>
-              <button className="btn-primary" onClick={handleSaveNotes}>
-                Save Notes & Mark Reviewed
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3>Doctor's Review</h3>
+              {report.doctorReview && !isEditing && (
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => setIsEditing(true)}
+                  style={{ fontSize: '14px', padding: '8px 16px' }}
+                >
+                  ✏️ Edit Review
+                </button>
+              )}
             </div>
+            
+            {report.reviewedAt && (
+              <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+                Last reviewed: {new Date(report.reviewedAt).toLocaleString()}
+              </p>
+            )}
+
+            {(!report.doctorReview || isEditing) ? (
+              <>
+                <textarea
+                  value={review}
+                  onChange={(e) => setReview(e.target.value)}
+                  placeholder="Add your clinical review, diagnosis, treatment plan, or follow-up instructions..."
+                  rows="8"
+                />
+                <div className="notes-actions">
+                  <button className="btn-secondary" onClick={() => {
+                    if (report.doctorReview) {
+                      setReview(report.doctorReview);
+                      setIsEditing(false);
+                    } else {
+                      navigate(-1);
+                    }
+                  }}>
+                    Cancel
+                  </button>
+                  <button 
+                    className="btn-primary" 
+                    onClick={handleSaveReview}
+                    disabled={!review.trim()}
+                  >
+                    {report.doctorReview ? 'Update Review' : 'Save Review & Mark Reviewed'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div style={{ 
+                background: '#f8f9fa', 
+                padding: '15px', 
+                borderRadius: '5px', 
+                border: '1px solid #ddd',
+                whiteSpace: 'pre-wrap'
+              }}>
+                {report.doctorReview}
+              </div>
+            )}
           </div>
         </div>
       </div>

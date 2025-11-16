@@ -9,11 +9,12 @@ function DoctorDashboard({ user }) {
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [user]);
 
   const fetchReports = async () => {
     try {
-      const response = await reportAPI.getAllReports();
+      // Doctors can see all reports - pass user data but backend won't filter for doctors
+      const response = await reportAPI.getAllReports(user._id, user.role);
       // Sort by risk score (high to low)
       const sorted = response.data.sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0));
       setReports(sorted);

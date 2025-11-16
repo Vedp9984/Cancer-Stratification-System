@@ -19,7 +19,12 @@ export const userAPI = {
 
 // Medical Report API
 export const reportAPI = {
-  getAllReports: () => api.get('/reports'),
+  getAllReports: (userId, userRole) => {
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    if (userRole) params.append('userRole', userRole);
+    return api.get(`/reports?${params.toString()}`);
+  },
   getReportById: (id) => api.get(`/reports/${id}`),
   createReport: (reportData) => api.post('/reports', reportData),
   updateReport: (id, reportData) => api.patch(`/reports/${id}`, reportData),

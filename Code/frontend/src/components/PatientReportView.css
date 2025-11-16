@@ -72,9 +72,17 @@
 }
 
 .summary-section h3,
-.next-steps-section h3 {
+.next-steps-section h3,
+.doctor-review-section h3 {
   margin-bottom: 15px;
   color: #333;
+}
+
+.doctor-review-section {
+  padding: 20px;
+  margin: 20px 0;
+  background: white;
+  border-radius: 8px;
 }
 
 .report-metadata {

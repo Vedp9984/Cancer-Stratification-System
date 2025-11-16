@@ -9,12 +9,12 @@ function PatientDashboard({ user }) {
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [user]);
 
   const fetchReports = async () => {
     try {
-      const response = await reportAPI.getAllReports();
-      // Mock: filter by patient - in production use user.id
+      // Fetch reports filtered by user ID and role
+      const response = await reportAPI.getAllReports(user._id, user.role);
       setReports(response.data);
     } catch (error) {
       console.error('Error fetching reports:', error);

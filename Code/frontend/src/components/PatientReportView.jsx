@@ -72,6 +72,26 @@ function PatientReportView() {
             <p>{report.recommendedNextSteps || 'Please consult with your doctor.'}</p>
           </div>
 
+          {report.doctorReview && (
+            <div className="doctor-review-section">
+              <h3>👨‍⚕️ Doctor's Review</h3>
+              <div style={{ 
+                background: '#e8f5e9', 
+                padding: '15px', 
+                borderRadius: '8px', 
+                border: '2px solid #4caf50',
+                whiteSpace: 'pre-wrap'
+              }}>
+                {report.doctorReview}
+              </div>
+              {report.reviewedAt && (
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                  Reviewed on: {new Date(report.reviewedAt).toLocaleString()}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="report-metadata">
             <p><strong>Report Date:</strong> {new Date(report.createdAt).toLocaleDateString()}</p>
             <p><strong>Status:</strong> {report.status}</p>
@@ -93,6 +113,26 @@ function PatientReportView() {
             <p><strong>Summary:</strong> {report.summary || 'Pending analysis'}</p>
             <p><strong>Next Steps:</strong> {report.recommendedNextSteps || 'Pending radiologist review'}</p>
           </div>
+
+          {report.doctorReview && (
+            <div className="doctor-review-section" style={{ marginTop: '20px' }}>
+              <h3>👨‍⚕️ Doctor's Review</h3>
+              <div style={{ 
+                background: '#e8f5e9', 
+                padding: '15px', 
+                borderRadius: '8px', 
+                border: '2px solid #4caf50',
+                whiteSpace: 'pre-wrap'
+              }}>
+                {report.doctorReview}
+              </div>
+              {report.reviewedAt && (
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                  Reviewed on: {new Date(report.reviewedAt).toLocaleString()}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

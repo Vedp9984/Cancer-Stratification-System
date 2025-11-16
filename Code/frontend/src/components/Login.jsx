@@ -33,14 +33,17 @@ function Login({ onLogin }) {
         setPassword('');
         setConfirmPassword('');
       } else {
-        // Login - for now just mock it
-        // In production, call userAPI.login(email, password)
-        onLogin({ email, role });
+        // Login - verify credentials against database
+        const response = await userAPI.login(email, password);
+        const userData = response.data;
+        
+        // Pass complete user data including _id
+        onLogin(userData);
         
         // Navigate based on role
-        if (role === 'patient') navigate('/patient/dashboard');
-        if (role === 'radiologist') navigate('/radiologist/worklist');
-        if (role === 'doctor') navigate('/doctor/dashboard');
+        if (userData.role === 'patient') navigate('/patient/dashboard');
+        if (userData.role === 'radiologist') navigate('/radiologist/worklist');
+        if (userData.role === 'doctor') navigate('/doctor/dashboard');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred');
@@ -97,14 +100,16 @@ function Login({ onLogin }) {
               />
             </div>
           )}
-          <div className="form-group">
-            <label>Role</label>
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="patient">Patient</option>
-              <option value="radiologist">Radiologist</option>
-              <option value="doctor">Doctor</option>
-            </select>
-          </div>
+          {isSignup && (
+            <div className="form-group">
+              <label>Role</label>
+              <select value={role} onChange={(e) => setRole(e.target.value)} required>
+                <option value="patient">Patient</option>
+                <option value="radiologist">Radiologist</option>
+                <option value="doctor">Doctor</option>
+              </select>
+            </div>
+          )}
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Processing...' : (isSignup ? 'Create Account' : 'Login')}
           </button>

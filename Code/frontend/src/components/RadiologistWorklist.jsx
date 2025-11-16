@@ -9,11 +9,12 @@ function RadiologistWorklist({ user }) {
 
   useEffect(() => {
     fetchPendingReports();
-  }, []);
+  }, [user]);
 
   const fetchPendingReports = async () => {
     try {
-      const response = await reportAPI.getAllReports();
+      // Fetch reports created by this radiologist
+      const response = await reportAPI.getAllReports(user._id, user.role);
       // Filter pending reports
       const pending = response.data.filter(r => r.status === 'pending');
       setReports(pending);

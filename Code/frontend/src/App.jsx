@@ -74,7 +74,7 @@ function App() {
           />
           <Route 
             path="/radiologist/archived" 
-            element={user?.role === 'radiologist' ? <RadiologistArchived /> : <Navigate to="/login" />} 
+            element={user?.role === 'radiologist' ? <RadiologistArchived user={user} /> : <Navigate to="/login" />} 
           />
           
           {/* Doctor Routes */}

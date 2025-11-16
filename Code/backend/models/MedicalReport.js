@@ -35,6 +35,24 @@ const medicalReportSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'analyzed', 'reviewed'],
     default: 'pending'
+  },
+  doctorReview: {
+    type: String,
+    default: null
+  },
+  reviewedAt: {
+    type: Date,
+    default: null
+  },
+  mlMetadata: {
+    chexpertScore: Number,
+    biobertScore: Number,
+    xgboostScore: Number,
+    clinicalScore: Number,
+    positiveFindings: String,
+    processedAt: Date,
+    error: String,
+    failedAt: Date
   }
 }, {
   timestamps: true
