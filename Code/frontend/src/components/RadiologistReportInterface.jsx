@@ -9,9 +9,6 @@ function RadiologistReportInterface() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [findings, setFindings] = useState('');
-  const [impression, setImpression] = useState('');
-  const [recommendations, setRecommendations] = useState('');
 
   useEffect(() => {
     if (id) fetchReport();
@@ -30,22 +27,6 @@ function RadiologistReportInterface() {
       setError(error.response?.data?.message || 'Failed to load report');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await reportAPI.updateReport(id, {
-        summary: `Findings: ${findings}\nImpression: ${impression}`,
-        recommendedNextSteps: recommendations,
-        status: 'analyzed'
-      });
-      alert('Report submitted successfully!');
-      navigate('/radiologist/worklist');
-    } catch (error) {
-      console.error('Error submitting report:', error);
-      alert('Error submitting report');
     }
   };
 
@@ -89,9 +70,21 @@ function RadiologistReportInterface() {
     <div className="radiologist-interface">
       <button className="btn-back" onClick={() => navigate(-1)}>← Back to Worklist</button>
 
-      <div className="interface-layout">
+      <div className="report-view-container">
+        <h2>Report Details</h2>
+        
+        <div className="report-info-card">
+          <div className="report-metadata">
+            <p><strong>Report ID:</strong> {report._id}</p>
+            <p><strong>Patient:</strong> {report.patientId?.email || 'N/A'}</p>
+            <p><strong>Doctor:</strong> {report.doctorId?.email || 'N/A'}</p>
+            <p><strong>Date:</strong> {new Date(report.createdAt).toLocaleDateString()}</p>
+            <p><strong>Status:</strong> <span className={`status-badge ${report.status}`}>{report.status}</span></p>
+          </div>
+        </div>
+
         <div className="image-viewer">
-          <h2>X-Ray Image Viewer</h2>
+          <h3>Uploaded X-Ray Image</h3>
           <div className="image-container">
             {report.imageUrl ? (
               <img src={`http://localhost:5000${report.imageUrl}`} alt="X-Ray" />
@@ -99,67 +92,18 @@ function RadiologistReportInterface() {
               <div className="no-image">No image uploaded</div>
             )}
           </div>
-          <div className="viewer-tools">
-            <button>🔍 Zoom In</button>
-            <button>🔍 Zoom Out</button>
-            <button>↻ Rotate</button>
-            <button>◐ Adjust Contrast</button>
+        </div>
+
+        {report.riskScore !== undefined && report.riskScore !== null && (
+          <div className="ml-results-section">
+            <h3>ML Analysis Results</h3>
+            <div className="results-card">
+              <p><strong>Risk Score:</strong> {report.riskScore}%</p>
+              <p><strong>Summary:</strong> {report.summary || 'Processing...'}</p>
+              <p><strong>Recommended Next Steps:</strong> {report.recommendedNextSteps || 'Pending...'}</p>
+            </div>
           </div>
-        </div>
-
-        <div className="reporting-form">
-          <h2>Structured Report Template</h2>
-          <form onSubmit={handleSubmit}>
-            <div className="form-section">
-              <label>Clinical Findings</label>
-              <textarea
-                value={findings}
-                onChange={(e) => setFindings(e.target.value)}
-                placeholder="Describe the radiological findings..."
-                rows="6"
-                required
-              />
-            </div>
-
-            <div className="form-section">
-              <label>Impression</label>
-              <textarea
-                value={impression}
-                onChange={(e) => setImpression(e.target.value)}
-                placeholder="Provide your clinical impression..."
-                rows="4"
-                required
-              />
-            </div>
-
-            <div className="form-section">
-              <label>Recommendations</label>
-              <textarea
-                value={recommendations}
-                onChange={(e) => setRecommendations(e.target.value)}
-                placeholder="Suggest next steps or follow-up procedures..."
-                rows="4"
-                required
-              />
-            </div>
-
-            <div className="report-metadata">
-              <p><strong>Report ID:</strong> {report._id}</p>
-              <p><strong>Patient:</strong> {report.patientId?.email || 'N/A'}</p>
-              <p><strong>Doctor:</strong> {report.doctorId?.email || 'N/A'}</p>
-              <p><strong>Date:</strong> {new Date(report.createdAt).toLocaleDateString()}</p>
-            </div>
-
-            <div className="form-actions">
-              <button type="button" className="btn-secondary" onClick={() => navigate(-1)}>
-                Save Draft
-              </button>
-              <button type="submit" className="btn-primary">
-                Submit Report
-              </button>
-            </div>
-          </form>
-        </div>
+        )}
       </div>
     </div>
   );
