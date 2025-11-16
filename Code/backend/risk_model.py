@@ -18,8 +18,9 @@ import pytesseract
 from transformers import AutoTokenizer, AutoModel
 import torch
 import xgboost as xgb
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from datetime import datetime
+import pickle
 
 warnings.filterwarnings('ignore')
 
@@ -70,6 +71,24 @@ RISK_THRESHOLDS = {
     'HIGH': (70, 100)
 }
 
+# Feature columns for unified feature vector (14 features)
+FEATURE_COLUMNS = [
+    'chexpert_score',
+    'chexpert_positive_findings',
+    'chexpert_high_risk_present',
+    'biobert_score',
+    'biobert_embedding_mean',
+    'biobert_embedding_std',
+    'clinical_score',
+    'clinical_bilateral',
+    'clinical_severe',
+    'clinical_acute',
+    'clinical_pathology_count',
+    'clinical_high_severity',
+    'clinical_negative_indicators',
+    'clinical_age_risk'
+]
+
 # ============================================================================
 # Model Initialization
 # ============================================================================
@@ -87,6 +106,65 @@ def initialize_biobert():
     except Exception as e:
         print(f"✗ Error loading BioBERT: {e}")
         return None, None
+
+def initialize_xgboost_model():
+    """Initialize or train XGBoost model"""
+    model_path = 'xgboost_risk_model.pkl'
+    scaler_path = 'feature_scaler.pkl'
+    
+    # Try to load pre-trained model
+    if os.path.exists(model_path) and os.path.exists(scaler_path):
+        try:
+            with open(model_path, 'rb') as f:
+                xgb_model = pickle.load(f)
+            with open(scaler_path, 'rb') as f:
+                scaler = pickle.load(f)
+            print(f"✓ Loaded pre-trained XGBoost model from {model_path}")
+            return xgb_model, scaler
+        except Exception as e:
+            print(f"⚠ Could not load model: {e}")
+            print("  Will train new model on first use")
+    
+    # Return None if model doesn't exist - will be trained on first batch
+    return None, None
+
+def train_xgboost_model(feature_matrix, labels):
+    """
+    Train XGBoost model on feature matrix
+    This is called when processing the first report or training data
+    """
+    print("\nTraining XGBoost model...")
+    
+    # Encode labels: LOW=0, MEDIUM=1, HIGH=2
+    label_mapping = {'LOW': 0, 'MEDIUM': 1, 'HIGH': 2}
+    y_numeric = np.array([label_mapping.get(label, 1) for label in labels])
+    
+    # Configure XGBoost
+    xgb_params = {
+        'objective': 'multi:softprob',
+        'num_class': 3,
+        'max_depth': 3,
+        'learning_rate': 0.1,
+        'n_estimators': 50,
+        'random_state': 42,
+        'eval_metric': 'mlogloss'
+    }
+    
+    # Train model
+    xgb_model = xgb.XGBClassifier(**xgb_params)
+    xgb_model.fit(feature_matrix, y_numeric)
+    
+    print("✓ XGBoost model trained")
+    
+    # Save model
+    try:
+        with open('xgboost_risk_model.pkl', 'wb') as f:
+            pickle.dump(xgb_model, f)
+        print("✓ Model saved to xgboost_risk_model.pkl")
+    except Exception as e:
+        print(f"⚠ Could not save model: {e}")
+    
+    return xgb_model
 
 # ============================================================================
 # OCR and Text Processing
@@ -316,6 +394,101 @@ def calculate_clinical_features_score(features):
     return max(0.1, min(score, 1.0))
 
 # ============================================================================
+# Feature Engineering
+# ============================================================================
+
+def create_unified_feature_vector(chexpert_findings, chexpert_score, 
+                                   biobert_result, biobert_score,
+                                   clinical_features, clinical_score):
+    """
+    Create a unified 14-feature vector combining all analysis results.
+    This matches the notebook's feature engineering pipeline.
+    """
+    # 1. CheXpert features (3 features)
+    chexpert_positive_count = sum(1 for v in chexpert_findings.values() if v > 0 and v != chexpert_findings.get('No Finding', 0))
+    chexpert_normalized_count = chexpert_positive_count / 14.0  # Normalize by max possible
+    
+    # Check for high-risk findings
+    high_risk_findings = ['Pneumonia', 'Pneumothorax', 'Lung Lesion', 'Consolidation']
+    chexpert_high_risk = max([chexpert_findings.get(finding, 0) for finding in high_risk_findings])
+    
+    # 2. BioBERT features (3 features)
+    biobert_mean = biobert_result['embedding_mean'] if biobert_result else 0.0
+    biobert_std = biobert_result['embedding_std'] if biobert_result else 0.0
+    
+    # 3. Clinical features (8 features)
+    clinical_bilateral = min(clinical_features['critical_bilateral'] / 3.0, 1.0)
+    clinical_severe = min(clinical_features['critical_severe'] / 3.0, 1.0)
+    clinical_acute = min(clinical_features['critical_acute'] / 3.0, 1.0)
+    clinical_pathology = min(clinical_features['pathology_count'] / 10.0, 1.0)
+    clinical_high_sev = min(clinical_features['high_severity_count'] / 5.0, 1.0)
+    clinical_negative = min(clinical_features['negative_count'] / 5.0, 1.0)
+    clinical_age = clinical_features['age_risk']
+    
+    # Create feature vector (must match FEATURE_COLUMNS order)
+    feature_vector = {
+        'chexpert_score': chexpert_score,
+        'chexpert_positive_findings': chexpert_normalized_count,
+        'chexpert_high_risk_present': chexpert_high_risk,
+        'biobert_score': biobert_score,
+        'biobert_embedding_mean': biobert_mean,
+        'biobert_embedding_std': biobert_std,
+        'clinical_score': clinical_score,
+        'clinical_bilateral': clinical_bilateral,
+        'clinical_severe': clinical_severe,
+        'clinical_acute': clinical_acute,
+        'clinical_pathology_count': clinical_pathology,
+        'clinical_high_severity': clinical_high_sev,
+        'clinical_negative_indicators': clinical_negative,
+        'clinical_age_risk': clinical_age
+    }
+    
+    return feature_vector
+
+def normalize_features(feature_vector, scaler=None):
+    """
+    Normalize features to 0-1 range using MinMaxScaler.
+    If scaler is None, creates and fits a new one (for training).
+    """
+    # Convert to array in correct order
+    feature_array = np.array([feature_vector[col] for col in FEATURE_COLUMNS]).reshape(1, -1)
+    
+    if scaler is None:
+        # Create new scaler (for training data)
+        scaler = MinMaxScaler()
+        normalized = scaler.fit_transform(feature_array)
+    else:
+        # Use existing scaler (for prediction)
+        normalized = scaler.transform(feature_array)
+    
+    return normalized[0], scaler
+
+def predict_with_xgboost(xgb_model, normalized_features):
+    """
+    Generate XGBoost predictions and probabilities.
+    Returns the HIGH risk probability as the XGBoost score.
+    """
+    if xgb_model is None:
+        # Fallback: use average if model not available
+        return None, None
+    
+    try:
+        # Reshape for prediction
+        features_reshaped = normalized_features.reshape(1, -1)
+        
+        # Get predictions
+        prediction = xgb_model.predict(features_reshaped)[0]
+        probabilities = xgb_model.predict_proba(features_reshaped)[0]
+        
+        # XGBoost score is the HIGH risk probability (index 2)
+        xgb_score = probabilities[2]
+        
+        return xgb_score, probabilities
+    except Exception as e:
+        print(f"⚠ XGBoost prediction error: {e}")
+        return None, None
+
+# ============================================================================
 # Risk Classification
 # ============================================================================
 
@@ -367,7 +540,7 @@ def generate_summary(text, findings, risk_category, risk_score):
 # Main Processing Pipeline
 # ============================================================================
 
-def process_report(image_path, biobert_model, biobert_tokenizer):
+def process_report(image_path, biobert_model, biobert_tokenizer, xgb_model=None, scaler=None):
     """Process a radiology report image and generate risk assessment"""
     
     print("\n" + "="*80)
@@ -400,11 +573,42 @@ def process_report(image_path, biobert_model, biobert_tokenizer):
     clinical_score = calculate_clinical_features_score(clinical_features)
     print(f"✓ Clinical score: {clinical_score*100:.1f}%")
     
-    # Step 6: XGBoost score (simplified - use average of other scores)
-    xgboost_score = (chexpert_score + biobert_score + clinical_score) / 3.0
-    print(f"✓ XGBoost score: {xgboost_score*100:.1f}%")
+    # Step 6: Feature Engineering - Create unified feature vector
+    print("Creating unified feature vector...")
+    feature_vector = create_unified_feature_vector(
+        chexpert_findings, chexpert_score,
+        biobert_result, biobert_score,
+        clinical_features, clinical_score
+    )
+    print(f"✓ Feature vector created: {len(feature_vector)} features")
     
-    # Step 7: Calculate ensemble score
+    # Step 7: Normalize features
+    print("Normalizing features...")
+    normalized_features, used_scaler = normalize_features(feature_vector, scaler)
+    print(f"✓ Features normalized")
+    
+    # Step 8: XGBoost prediction
+    xgboost_score = None
+    xgb_probabilities = None
+    
+    if xgb_model is not None:
+        print("Generating XGBoost predictions...")
+        xgboost_score, xgb_probabilities = predict_with_xgboost(xgb_model, normalized_features)
+        
+        if xgboost_score is not None:
+            print(f"✓ XGBoost score: {xgboost_score*100:.1f}%")
+            print(f"  Probabilities: LOW={xgb_probabilities[0]:.3f}, MEDIUM={xgb_probabilities[1]:.3f}, HIGH={xgb_probabilities[2]:.3f}")
+        else:
+            print("⚠ XGBoost prediction failed, using fallback")
+    else:
+        print("⚠ XGBoost model not available, using fallback averaging")
+    
+    # Fallback if XGBoost fails or is unavailable
+    if xgboost_score is None:
+        xgboost_score = (chexpert_score + biobert_score + clinical_score) / 3.0
+        print(f"✓ XGBoost score (fallback): {xgboost_score*100:.1f}%")
+    
+    # Step 9: Calculate ensemble score
     ensemble_score = (
         biobert_score * ENSEMBLE_WEIGHTS['biobert'] +
         chexpert_score * ENSEMBLE_WEIGHTS['chexpert'] +
@@ -413,15 +617,27 @@ def process_report(image_path, biobert_model, biobert_tokenizer):
     )
     ensemble_percentage = ensemble_score * 100
     
-    # Step 8: Classify risk
+    # Step 10: Classify risk
     risk_category = classify_risk(ensemble_percentage)
     
-    # Step 9: Generate summary
+    # Step 11: Generate summary
     summary = generate_summary(cleaned_text, chexpert_findings, risk_category, ensemble_percentage)
     
     print("\n" + "-"*80)
     print(f"FINAL RISK SCORE: {ensemble_percentage:.1f}% ({risk_category})")
     print("-"*80)
+    
+    # Prepare feature importance data
+    feature_importance = None
+    if xgb_model is not None:
+        try:
+            importance_values = xgb_model.feature_importances_
+            feature_importance = {
+                FEATURE_COLUMNS[i]: float(importance_values[i]) 
+                for i in range(len(FEATURE_COLUMNS))
+            }
+        except:
+            pass
     
     return {
         'image_path': image_path,
@@ -433,6 +649,10 @@ def process_report(image_path, biobert_model, biobert_tokenizer):
         'clinical_score': clinical_score * 100,
         'summary': summary,
         'positive_findings': [k for k, v in chexpert_findings.items() if v > 0],
+        'xgb_probabilities': xgb_probabilities,
+        'feature_vector': feature_vector,
+        'normalized_features': normalized_features.tolist(),
+        'feature_importance': feature_importance,
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
 
@@ -457,6 +677,39 @@ def save_results_to_csv(results, output_path='risk_assessment_output.csv'):
     print("="*80)
     print(df.to_string(index=False))
     print("="*80)
+    
+    # Display feature importance if available
+    if results.get('feature_importance'):
+        print("\n" + "="*80)
+        print("FEATURE IMPORTANCE ANALYSIS (XGBoost)")
+        print("="*80)
+        
+        # Sort by importance
+        sorted_features = sorted(
+            results['feature_importance'].items(), 
+            key=lambda x: x[1], 
+            reverse=True
+        )
+        
+        print("\nTop 10 Most Important Features for Risk Prediction:")
+        print("-"*80)
+        for i, (feature, importance) in enumerate(sorted_features[:10], 1):
+            bar_length = int(importance * 50)
+            bar = "█" * bar_length
+            print(f"{i:2d}. {feature:35s} {importance:.4f} {bar}")
+        
+        print("="*80)
+    
+    # Display XGBoost probabilities if available
+    if results.get('xgb_probabilities') is not None:
+        probs = results['xgb_probabilities']
+        print("\n" + "="*80)
+        print("XGBOOST RISK PROBABILITIES")
+        print("="*80)
+        print(f"  LOW Risk:    {probs[0]*100:5.1f}%")
+        print(f"  MEDIUM Risk: {probs[1]*100:5.1f}%")
+        print(f"  HIGH Risk:   {probs[2]*100:5.1f}%")
+        print("="*80)
 
 # ============================================================================
 # Main Entry Point
@@ -479,14 +732,34 @@ def main():
         print(f"Error: Image file not found: {image_path}")
         sys.exit(1)
     
+    print("\n" + "="*80)
+    print("INITIALIZING CANCER RISK STRATIFICATION SYSTEM")
+    print("="*80 + "\n")
+    
     # Initialize BioBERT
     biobert_model, biobert_tokenizer = initialize_biobert()
     if biobert_model is None or biobert_tokenizer is None:
         print("Error: Failed to initialize BioBERT model")
         sys.exit(1)
     
+    # Initialize XGBoost model (may be None if not trained yet)
+    xgb_model, scaler = initialize_xgboost_model()
+    
+    if xgb_model is None:
+        print("\n" + "="*80)
+        print("⚠ XGBoost Model Not Found")
+        print("="*80)
+        print("No pre-trained XGBoost model detected.")
+        print("The system will use a simplified fallback scoring method.")
+        print("\nTo train an XGBoost model:")
+        print("  1. Create a training dataset with multiple reports")
+        print("  2. Run the training script (see documentation)")
+        print("  3. The trained model will be saved as 'xgboost_risk_model.pkl'")
+        print("\nContinuing with fallback method...")
+        print("="*80 + "\n")
+    
     # Process the report
-    results = process_report(image_path, biobert_model, biobert_tokenizer)
+    results = process_report(image_path, biobert_model, biobert_tokenizer, xgb_model, scaler)
     
     # Save results to CSV
     output_filename = f"risk_assessment_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
