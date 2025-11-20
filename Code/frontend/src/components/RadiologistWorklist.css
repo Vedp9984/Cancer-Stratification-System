@@ -1,120 +1,196 @@
 .radiologist-worklist {
-  padding: 20px;
-  max-width: 1400px;
+  padding: 2rem;
+  max-width: 1600px;
   margin: 0 auto;
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .worklist-header {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  background: var(--gradient-success);
   color: white;
-  padding: 30px;
-  border-radius: 10px;
-  margin-bottom: 30px;
+  padding: 2rem;
+  border-radius: var(--radius-xl);
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .worklist-header h1 {
-  margin: 0 0 10px 0;
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+  font-size: 2rem;
+}
+
+.worklist-header p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 1rem;
 }
 
 .stats {
-  margin-top: 15px;
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .stat-badge {
-  background: rgba(255, 255, 255, 0.3);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: bold;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 0.875rem;
+  backdrop-filter: blur(10px);
 }
 
 .actions-bar {
   display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
 }
 
 .btn-primary {
-  padding: 12px 24px;
-  background: #11998e;
+  padding: 0.875rem 1.5rem;
+  background: var(--success);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all var(--transition-fast);
 }
 
 .btn-primary:hover {
-  background: #0d7a70;
+  background: #0d9488;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
-  padding: 12px 24px;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 5px;
+  padding: 0.875rem 1.5rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   cursor: pointer;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
 }
 
 .worklist-table {
-  background: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: var(--bg-secondary);
+  padding: 2rem;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
 }
 
 .worklist-table h2 {
-  margin-bottom: 20px;
-  color: #333;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1.5rem;
 }
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 thead {
-  background: #f8f9fa;
+  background: var(--bg-tertiary);
 }
 
 th, td {
-  padding: 15px;
+  padding: 1rem;
   text-align: left;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--border-light);
 }
 
 th {
   font-weight: 600;
-  color: #495057;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+td {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+tr:hover td {
+  background: var(--bg-hover);
 }
 
 .status-badge {
-  padding: 5px 12px;
-  border-radius: 15px;
-  font-size: 12px;
-  font-weight: bold;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
 }
 
 .status-badge.pending {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--warning-bg);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-badge.analyzed {
+  background: var(--info-bg);
+  color: var(--info);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.status-badge.reviewed {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .btn-action {
-  padding: 8px 16px;
-  background: #11998e;
+  padding: 0.5rem 1rem;
+  background: var(--accent-primary);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all var(--transition-fast);
 }
 
 .btn-action:hover {
-  background: #0d7a70;
+  background: var(--accent-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .empty-state {
   text-align: center;
-  padding: 40px;
-  color: #6c757d;
+  padding: 3rem;
+  color: var(--text-tertiary);
+}
+
+.empty-state p {
+  font-size: 1.125rem;
+  margin: 0;
 }

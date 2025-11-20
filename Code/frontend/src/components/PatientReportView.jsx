@@ -76,7 +76,7 @@ function PatientReportView() {
             <div className="doctor-review-section">
               <h3>👨‍⚕️ Doctor's Review</h3>
               <div style={{ 
-                background: '#e8f5e9', 
+                background: '#e8f5e91c' , 
                 padding: '15px', 
                 borderRadius: '8px', 
                 border: '2px solid #4caf50',
@@ -118,7 +118,7 @@ function PatientReportView() {
             <div className="doctor-review-section" style={{ marginTop: '20px' }}>
               <h3>👨‍⚕️ Doctor's Review</h3>
               <div style={{ 
-                background: '#e8f5e9', 
+                background: '#e8f5e91c', 
                 padding: '15px', 
                 borderRadius: '8px', 
                 border: '2px solid #4caf50',

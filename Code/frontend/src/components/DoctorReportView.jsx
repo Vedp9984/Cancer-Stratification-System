@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { reportAPI } from '../services/api';
-import './DoctorReportView.css';
+import './PatientReportView.css'; // Using PatientReportView styles
 
 function DoctorReportView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState(null);
+  const [viewMode, setViewMode] = useState('simplified');
   const [review, setReview] = useState('');
-  const [showFullReport, setShowFullReport] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
@@ -19,7 +19,6 @@ function DoctorReportView() {
     try {
       const response = await reportAPI.getReportById(id);
       setReport(response.data);
-      // Load existing review if present
       if (response.data.doctorReview) {
         setReview(response.data.doctorReview);
       }
@@ -37,156 +36,299 @@ function DoctorReportView() {
       });
       alert('Review saved successfully!');
       setIsEditing(false);
-      fetchReport(); // Refresh to show updated data
+      fetchReport();
     } catch (error) {
       console.error('Error saving review:', error);
       alert('Failed to save review');
     }
   };
 
-  if (!report) return <div>Loading...</div>;
+  if (!report) return <div className="patient-report-view"><div>Loading...</div></div>;
 
-  const getRiskInfo = (score) => {
-    if (score < 30) return { level: 'Low Risk', color: '#4caf50', icon: '🟢' };
-    if (score < 70) return { level: 'Moderate Risk', color: '#ff9800', icon: '🟡' };
-    return { level: 'High Risk', color: '#f44336', icon: '🔴' };
+  const getRiskLevel = (score) => {
+    if (score < 30) return { level: 'Low', color: '#4caf50', description: 'Results show minimal concern.' };
+    if (score < 70) return { level: 'Moderate', color: '#ff9800', description: 'Results require monitoring.' };
+    return { level: 'High', color: '#f44336', description: 'Results require immediate attention.' };
   };
 
-  const riskInfo = getRiskInfo(report.riskScore || 0);
+  const riskInfo = getRiskLevel(report.riskScore || 0);
 
   return (
-    <div className="doctor-report-view">
-      <button className="btn-back" onClick={() => navigate(-1)}>← Back to Dashboard</button>
+    <div className="patient-report-view">
+      <button className="btn-back" onClick={() => navigate(-1)}>← Back</button>
+      
+      <div className="view-toggle">
+        <button 
+          className={viewMode === 'simplified' ? 'active' : ''}
+          onClick={() => setViewMode('simplified')}
+        >
+          Simplified View
+        </button>
+        <button 
+          className={viewMode === 'full' ? 'active' : ''}
+          onClick={() => setViewMode('full')}
+        >
+          Full Report
+        </button>
+      </div>
 
-      <div className="report-layout">
-        {/* Critical Information Panel */}
-        <div className="critical-panel">
-          <h2>Critical Information at a Glance</h2>
-          
-          <div className="risk-summary" style={{ borderColor: riskInfo.color }}>
-            <div className="risk-icon">{riskInfo.icon}</div>
-            <div className="risk-details">
-              <h3 style={{ color: riskInfo.color }}>{riskInfo.level}</h3>
-              <div className="risk-score-large">
-                Score: {report.riskScore || 'N/A'}
-              </div>
+      {viewMode === 'simplified' ? (
+        <div className="simplified-view">
+          <div className="risk-score-display" style={{ borderColor: riskInfo.color }}>
+            <h2>Risk Score</h2>
+            <div className="score-circle" style={{ background: riskInfo.color }}>
+              {report.riskScore || 'N/A'}
             </div>
+            <h3 style={{ color: riskInfo.color }}>{riskInfo.level} Risk</h3>
+            <p>{riskInfo.description}</p>
           </div>
 
-          <div className="patient-info">
-            <h3>Patient Information</h3>
-            <p><strong>Patient ID:</strong> {report.patientId?._id || 'N/A'}</p>
-            <p><strong>Email:</strong> {report.patientId?.email || 'N/A'}</p>
-            <p><strong>Report Date:</strong> {new Date(report.createdAt).toLocaleDateString()}</p>
-            <p><strong>Status:</strong> {report.status}</p>
-          </div>
-
-          <div className="quick-summary">
+          <div className="summary-section">
             <h3>📋 Summary</h3>
-            <p>{report.summary || 'No summary available yet.'}</p>
+            <p>{report.summary || 'Analysis pending...'}</p>
           </div>
 
-          <div className="recommendations">
+          <div className="next-steps-section">
             <h3>🩺 Recommended Next Steps</h3>
-            <p>{report.recommendedNextSteps || 'Pending radiologist review.'}</p>
-          </div>
-        </div>
-
-        {/* Full Report Section */}
-        <div className="full-report-panel">
-          <div className="panel-header">
-            <h2>Full Report Details</h2>
-            <button 
-              className="btn-toggle"
-              onClick={() => setShowFullReport(!showFullReport)}
-            >
-              {showFullReport ? 'Hide' : 'Show'} Full Report
-            </button>
+            <p>{report.recommendedNextSteps || 'Please consult with doctor.'}</p>
           </div>
 
-          {showFullReport && (
-            <div className="full-report-content">
-              {report.imageUrl && (
-                <div className="xray-image">
-                  <h3>X-Ray Image</h3>
-                  <img src={`http://localhost:5000${report.imageUrl}`} alt="X-Ray" />
-                </div>
-              )}
-
-              <div className="technical-details">
-                <h3>Technical Details</h3>
-                <p><strong>Report ID:</strong> {report._id}</p>
-                <p><strong>Radiologist:</strong> {report.radiologistId?.email || 'N/A'}</p>
-                <p><strong>Doctor:</strong> {report.doctorId?.email || 'N/A'}</p>
-                <p><strong>Created:</strong> {new Date(report.createdAt).toLocaleString()}</p>
-                <p><strong>Updated:</strong> {new Date(report.updatedAt).toLocaleString()}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Doctor's Review Section */}
-          <div className="doctor-notes">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3>Doctor's Review</h3>
-              {report.doctorReview && !isEditing && (
-                <button 
-                  className="btn-secondary" 
-                  onClick={() => setIsEditing(true)}
-                  style={{ fontSize: '14px', padding: '8px 16px' }}
-                >
-                  ✏️ Edit Review
-                </button>
-              )}
-            </div>
-            
-            {report.reviewedAt && (
-              <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
-                Last reviewed: {new Date(report.reviewedAt).toLocaleString()}
-              </p>
-            )}
-
-            {(!report.doctorReview || isEditing) ? (
+          {/* Doctor's Review Section - Editable for doctors */}
+          <div className="doctor-review-section">
+            <h3>👨‍⚕️ Doctor's Review</h3>
+            {isEditing ? (
               <>
                 <textarea
                   value={review}
                   onChange={(e) => setReview(e.target.value)}
-                  placeholder="Add your clinical review, diagnosis, treatment plan, or follow-up instructions..."
-                  rows="8"
+                  placeholder="Enter your clinical review and recommendations..."
+                  rows="6"
+                  style={{
+                    width: '100%',
+                    padding: '15px',
+                    borderRadius: '8px',
+                    border: '1px solid #ddd',
+                    fontFamily: 'inherit',
+                    fontSize: '14px',
+                    marginBottom: '10px'
+                  }}
                 />
-                <div className="notes-actions">
-                  <button className="btn-secondary" onClick={() => {
-                    if (report.doctorReview) {
-                      setReview(report.doctorReview);
-                      setIsEditing(false);
-                    } else {
-                      navigate(-1);
-                    }
-                  }}>
-                    Cancel
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={handleSaveReview}
+                    style={{
+                      padding: '10px 20px',
+                      background: '#4caf50',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Save Review
                   </button>
                   <button 
-                    className="btn-primary" 
-                    onClick={handleSaveReview}
-                    disabled={!review.trim()}
+                    onClick={() => {
+                      setIsEditing(false);
+                      setReview(report.doctorReview || '');
+                    }}
+                    style={{
+                      padding: '10px 20px',
+                      background: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}
                   >
-                    {report.doctorReview ? 'Update Review' : 'Save Review & Mark Reviewed'}
+                    Cancel
                   </button>
                 </div>
               </>
             ) : (
-              <div style={{ 
-                background: '#f8f9fa', 
-                padding: '15px', 
-                borderRadius: '5px', 
-                border: '1px solid #ddd',
-                whiteSpace: 'pre-wrap'
-              }}>
-                {report.doctorReview}
-              </div>
+              <>
+                {report.doctorReview ? (
+                  <>
+                    <div style={{ 
+                      background: '#e8f5e91c', 
+                      padding: '15px', 
+                      borderRadius: '8px', 
+                      border: '2px solid #4caf50',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {report.doctorReview}
+                    </div>
+                    {report.reviewedAt && (
+                      <p style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                        Reviewed on: {new Date(report.reviewedAt).toLocaleString()}
+                      </p>
+                    )}
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      style={{
+                        marginTop: '10px',
+                        padding: '10px 20px',
+                        background: '#667eea',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Edit Review
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    style={{
+                      padding: '10px 20px',
+                      background: '#667eea',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Add Review
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="report-metadata">
+            <h3>Report Information</h3>
+            <p><strong>Patient:</strong> {report.patientId?.email || 'N/A'}</p>
+            <p><strong>Report Date:</strong> {new Date(report.createdAt).toLocaleDateString()}</p>
+            <p><strong>Status:</strong> {report.status}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="full-view">
+          <h2>Full Medical Report</h2>
+          {report.imageUrl && (
+            <div className="report-image">
+              <img src={`http://localhost:5000${report.imageUrl}`} alt="X-Ray Report" />
+            </div>
+          )}
+          <div className="technical-details">
+            <h3>Technical Details</h3>
+            <p><strong>Report ID:</strong> {report._id}</p>
+            <p><strong>Patient:</strong> {report.patientId?.email || 'N/A'}</p>
+            <p><strong>Radiologist:</strong> {report.radiologistId?.email || 'N/A'}</p>
+            <p><strong>Doctor:</strong> {report.doctorId?.email || 'N/A'}</p>
+            <p><strong>Date:</strong> {new Date(report.createdAt).toLocaleString()}</p>
+            <p><strong>Risk Score:</strong> {report.riskScore || 'Pending'}</p>
+            <p><strong>Summary:</strong> {report.summary || 'Pending analysis'}</p>
+            <p><strong>Next Steps:</strong> {report.recommendedNextSteps || 'Pending radiologist review'}</p>
+          </div>
+
+          {/* Doctor's Review Section - Editable for doctors */}
+          <div className="doctor-review-section" style={{ marginTop: '20px' }}>
+            <h3>👨‍⚕️ Doctor's Review</h3>
+            {isEditing ? (
+              <>
+                <textarea
+                  value={review}
+                  onChange={(e) => setReview(e.target.value)}
+                  placeholder="Enter your clinical review and recommendations..."
+                  rows="6"
+                  style={{
+                    width: '100%',
+                    padding: '15px',
+                    borderRadius: '8px',
+                    border: '1px solid #ddd',
+                    fontFamily: 'inherit',
+                    fontSize: '14px',
+                    marginBottom: '10px'
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={handleSaveReview}
+                    style={{
+                      padding: '10px 20px',
+                      background: '#4caf50',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Save Review
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsEditing(false);
+                      setReview(report.doctorReview || '');
+                    }}
+                    style={{
+                      padding: '10px 20px',
+                      background: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {report.doctorReview ? (
+                  <>
+                    <div style={{ 
+                      background: '#e8f5e91c', 
+                      padding: '15px', 
+                      borderRadius: '8px', 
+                      border: '2px solid #4caf50',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {report.doctorReview}
+                    </div>
+                    {report.reviewedAt && (
+                      <p style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                        Reviewed on: {new Date(report.reviewedAt).toLocaleString()}
+                      </p>
+                    )}
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      style={{
+                        marginTop: '10px',
+                        padding: '10px 20px',
+                        background: '#667eea',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Edit Review
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    style={{
+                      padding: '10px 20px',
+                      background: '#667eea',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Add Review
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

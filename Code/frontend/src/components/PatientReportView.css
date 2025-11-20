@@ -1,121 +1,227 @@
 .patient-report-view {
-  padding: 20px;
-  max-width: 900px;
+  padding: 2rem;
+  max-width: 1000px;
   margin: 0 auto;
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .btn-back {
-  padding: 10px 20px;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 5px;
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  margin-bottom: 20px;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-back::before {
+  content: '←';
+  font-size: 1.125rem;
+}
+
+.btn-back:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  transform: translateX(-4px);
 }
 
 .view-toggle {
   display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  background: var(--bg-tertiary);
+  padding: 0.375rem;
+  border-radius: var(--radius-md);
+  width: fit-content;
 }
 
 .view-toggle button {
-  padding: 10px 20px;
-  border: 2px solid #667eea;
-  background: white;
-  color: #667eea;
-  border-radius: 5px;
+  padding: 0.625rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--transition-fast);
+  font-weight: 500;
+  font-size: 0.875rem;
 }
 
 .view-toggle button.active {
-  background: #667eea;
+  background: var(--accent-primary);
   color: white;
+  box-shadow: var(--shadow-sm);
 }
 
-.simplified-view {
-  background: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+.simplified-view,
+.full-view {
+  background: var(--bg-secondary);
+  padding: 2rem;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color);
 }
 
 .risk-score-display {
   text-align: center;
-  padding: 30px;
-  border: 3px solid;
-  border-radius: 10px;
-  margin-bottom: 30px;
+  padding: 2rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  margin-bottom: 2rem;
+  background: var(--bg-tertiary);
+  position: relative;
+  overflow: hidden;
+}
+
+.risk-score-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
 }
 
 .score-circle {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 48px;
-  font-weight: bold;
+  font-size: 3rem;
+  font-weight: 700;
   color: white;
-  margin: 20px auto;
+  margin: 1.5rem auto;
+  box-shadow: var(--shadow-lg);
+  border: 4px solid var(--bg-secondary);
 }
 
 .summary-section,
 .next-steps-section {
-  margin-bottom: 30px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 5px;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
 }
 
 .summary-section h3,
 .next-steps-section h3,
 .doctor-review-section h3 {
-  margin-bottom: 15px;
-  color: #333;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.summary-section p,
+.next-steps-section p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0;
 }
 
 .doctor-review-section {
-  padding: 20px;
-  margin: 20px 0;
-  background: white;
-  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  background: var(--success-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.doctor-review-section h3 {
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.doctor-review-section h3::before {
+  content: '✓';
+  font-size: 1.25rem;
+}
+
+.doctor-review-section p {
+  color: var(--text-primary);
+  line-height: 1.7;
+  margin: 0.5rem 0 0 0;
 }
 
 .report-metadata {
-  padding: 20px;
-  background: #e9ecef;
-  border-radius: 5px;
+  padding: 1.5rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  margin-bottom: 2rem;
 }
 
-.full-view {
-  background: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+.report-metadata h3 {
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.report-metadata p {
+  margin: 0.5rem 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.report-metadata strong {
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .report-image {
-  margin: 20px 0;
+  margin: 2rem 0;
   text-align: center;
+  background: var(--bg-tertiary);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
 }
 
 .report-image img {
   max-width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
 }
 
 .technical-details {
-  margin-top: 20px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 5px;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+}
+
+.technical-details h3 {
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-weight: 600;
 }
 
 .technical-details p {
-  margin: 10px 0;
+  margin: 0.75rem 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.technical-details strong {
+  color: var(--text-primary);
+  font-weight: 600;
 }
